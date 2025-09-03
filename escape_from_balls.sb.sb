@@ -1,0 +1,119 @@
+GraphicsWindow.Title = "ИЗБЯГАЙ ОТ ТОПЧЕТАТА" 'Заглавие на графичен прозорец
+GraphicsWindow.BackgroundColor = GraphicsWindow.GetColorFromRGB(0, 0, 0) 'Фон на прозореца
+
+'Променливи:
+numBalls = 10
+ballSize = 20
+initialBallSpeed = 3
+ballSpeed = initialBallSpeed
+level = 1
+
+'Масиви за местоположението,скоростта и цвета на топчетата
+ballsX = ""  
+ballsY = ""  
+ballsSpeedX = "" 
+ballsSpeedY = "" 
+ballColors = ""
+
+'Размер и начална позиция на мишката
+cursorSize = 20
+cursorX = GraphicsWindow.Width / 2
+cursorY = GraphicsWindow.Height / 2
+
+'Начало на играта и начални точки за скоростта на топчетата и нивото:
+Begin:
+GameOver = "False"
+ballSpeed = initialBallSpeed
+level = 1
+GraphicsWindow.ShowMessage("Готови за СТАРТ", "НАЧАЛО")
+Program.Delay(2000) 
+
+' "For" цикъл за задаване на стойности на топчетата:
+For i = 1 To numBalls
+  ballsX[i] = Math.GetRandomNumber(GraphicsWindow.Width - ballSize)
+  ballsY[i] = Math.GetRandomNumber(GraphicsWindow.Height - ballSize)
+  ballsSpeedX[i] = Math.GetRandomNumber(2 * ballSpeed + 1) - ballSpeed
+  ballsSpeedY[i] = Math.GetRandomNumber(2 * ballSpeed + 1) - ballSpeed
+  ballColors[i] = GraphicsWindow.GetRandomColor()
+  GraphicsWindow.DrawEllipse(ballsX[i], ballsY[i], ballSize, ballSize)
+  GraphicsWindow.BrushColor = ballColors[i] 
+  GraphicsWindow.FillEllipse(ballsX[i], ballsY[i], ballSize, ballSize) 
+EndFor
+
+'Задаване на начални стойности за таймера
+gameDuration = 30 ' seconds
+GameOver = "False"
+startTime = Clock.ElapsedMilliseconds
+
+'Цикъл на играта:
+While (GameOver = "False")
+  cursorX = GraphicsWindow.MouseX
+  cursorY = GraphicsWindow.MouseY
+  
+  'форматиране на изминалото време:
+  elapsedTime = Clock.ElapsedMilliseconds - startTime
+  seconds = Math.Floor(elapsedTime / 1000)
+  minutes = Math.Floor(seconds / 60)
+  seconds = seconds - minutes * 60
+  
+  'Условие за преминаване в следващо ниво:
+  If seconds >= gameDuration Then
+    startTime = Clock.ElapsedMilliseconds
+    ballSpeed = ballSpeed + 2
+    level = level + 1
+   
+    'Позициониране на прозорец с текст при преминаване в ново ниво: 
+    GraphicsWindow.Clear()
+    GraphicsWindow.BrushColor = GraphicsWindow.GetColorFromRGB(255, 255, 255)
+    GraphicsWindow.DrawText(GraphicsWindow.Width / 2 - 50, GraphicsWindow.Height / 2 , "БРАВО! Скоростта се увеличава!")
+
+    Program.Delay(2000) 
+  EndIf
+  
+  GraphicsWindow.Clear()
+  GraphicsWindow.BrushColor = GraphicsWindow.GetColorFromRGB(255, 255, 255)
+  
+  'Задаваме условие на таймера ,при което,ако секундите са по-малко от 10 ,да имаме допълнителна нула
+  If seconds < 10 Then
+    GraphicsWindow.DrawText(10, 10, "Time: " + minutes + ":0" + seconds)
+  Else
+    GraphicsWindow.DrawText(10, 10, "Time: " + minutes + ":" + seconds)
+  EndIf
+  
+  GraphicsWindow.DrawText(GraphicsWindow.Width - 100, 10, "Level: " + level)
+  
+  GraphicsWindow.DrawEllipse(cursorX - cursorSize / 2, cursorY - cursorSize / 2, cursorSize, cursorSize)
+  GraphicsWindow.FillEllipse(cursorX - cursorSize / 2, cursorY - cursorSize / 2, cursorSize, cursorSize)
+  
+  'Обновяваме позицията на топчетата според скоростта:
+  For i = 1 To numBalls
+    ballsX[i] = ballsX[i] + ballsSpeedX[i] * ballSpeed / initialBallSpeed
+    ballsY[i] = ballsY[i] + ballsSpeedY[i] * ballSpeed / initialBallSpeed
+    
+    'Отклоняваме сблъсъци със стените:
+    If ballsX[i] < 0 Or ballsX[i] > GraphicsWindow.Width - ballSize Then
+      ballsSpeedX[i] = -ballsSpeedX[i] 
+    EndIf
+  
+    If ballsY[i] < 0 Or ballsY[i] > GraphicsWindow.Height - ballSize Then
+      ballsSpeedY[i] = -ballsSpeedY[i]
+    EndIf
+  
+    ' Преверяваме за сблъсък с топчетата:(формула: разстояние = sqrt((x2 - x1)^2 + (y2 - y1)^2))
+    If Math.SquareRoot((ballsX[i] + ballSize / 2 - cursorX) * (ballsX[i] + ballSize / 2 - cursorX) + (ballsY[i] + ballSize / 2 - cursorY) * (ballsY[i] + ballSize / 2 - cursorY)) < (ballSize + cursorSize) / 2 Then     
+      GameOver = "True" 'ако има сблъсък се сменя условието на True
+    EndIf
+    
+    GraphicsWindow.DrawEllipse(ballsX[i], ballsY[i], ballSize, ballSize)
+    GraphicsWindow.BrushColor = ballColors[i]
+    GraphicsWindow.FillEllipse(ballsX[i], ballsY[i], ballSize, ballSize)
+  EndFor
+  
+  Program.Delay(10)
+  
+EndWhile
+
+GraphicsWindow.DrawText(GraphicsWindow.Width / 2 - 50, GraphicsWindow.Height / 2 - 10, "GAME OVER")
+Mouse.ShowCursor()
+GraphicsWindow.ShowMessage("ВИЕ ЗАГУБИХТЕ", "ОПИТАЙТЕ ПАК")
+Goto Begin
